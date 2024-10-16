@@ -62,7 +62,6 @@ func report_invisible_variant_status(filename_designer string, filename_cs strin
 	restr := ""
 	f, err := os.Open(filename_cs)
 	if err != nil {
-		fmt.Println("open " + filename_cs + " failed")
 		return restr
 	}
 	defer f.Close()
@@ -105,7 +104,6 @@ func browser_folder(folder string) int {
 			file_path_low := strings.ToLower(file_path)
 			fileSuffix := get_file_ext(file_path_low)
 			if strings.EqualFold(fileSuffix, "designer.cs") {
-				fmt.Println("check:" + file_path_low)
 				variants := get_invisible_variant(file_path_low)
 				file_name_cs := strings.ReplaceAll(file_path_low, "designer.", "")
 				report := report_invisible_variant_status(file_path_low, file_name_cs, variants)
