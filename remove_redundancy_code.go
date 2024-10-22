@@ -93,7 +93,12 @@ func report_invisible_variant_status(filename_designer string, filename_cs strin
 	}
 	if len(resultstr) != 0 {
 		restr = filename_designer + " doesn't show these [" + fmt.Sprintf(strings.Join(variants, ",")) + "] controls.\n"
-		restr = restr + filename_cs + " doesn't used these [" + strings.Trim(resultstr, " ") + "]," + strconv.Itoa(variant_count) + " variants."
+		restr = restr + filename_cs + " doesn't used these [" + strings.Trim(resultstr, " ") + "],"
+		if variant_count == 1 {
+			restr = restr + strconv.Itoa(variant_count) + " variant."
+		} else {
+			restr = restr + strconv.Itoa(variant_count) + " variants."
+		}
 	}
 	*count = variant_count
 	return restr
@@ -127,7 +132,7 @@ func browser_folder(folder string) int {
 	}
 
 	file_report := "report.log"
-	file2, err := os.OpenFile(file_report, os.O_CREATE, 0666)
+	file2, err := os.OpenFile(file_report, os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		fmt.Printf("openfile file2 err : %v\n", err)
 	}
