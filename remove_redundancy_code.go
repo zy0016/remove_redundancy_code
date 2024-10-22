@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -29,7 +30,6 @@ func get_invisible_variant(filename string) []string {
 			break
 		}
 		if strings.Index(line, ".Visible = false;") != -1 {
-			//this.hsLabel5.Visible = false;
 			variant1 := strings.ReplaceAll(line, "this.", "")
 			variant2 := strings.ReplaceAll(variant1, ".Visible = false;", "")
 			variant3 := strings.ReplaceAll(variant2, "\n", "")
@@ -56,8 +56,9 @@ func get_file_ext(filepath string) string {
 		}
 	}
 }
-func report_invisible_variant_status(filename_designer string, filename_cs string, variants []string) string {
+func report_invisible_variant_status(filename_designer string, filename_cs string, variants []string, count *int) string {
 	var line_list []string
+	variant_count := 0
 	resultstr := ""
 	restr := ""
 	f, err := os.Open(filename_cs)
@@ -87,18 +88,22 @@ func report_invisible_variant_status(filename_designer string, filename_cs strin
 		}
 		if !used {
 			resultstr = resultstr + " " + item
+			variant_count++
 		}
 	}
 	if len(resultstr) != 0 {
 		restr = filename_designer + " doesn't show these [" + fmt.Sprintf(strings.Join(variants, ",")) + "] controls.\n"
-		restr = restr + filename_cs + " doesn't used these [" + strings.Trim(resultstr, " ") + "]"
+		restr = restr + filename_cs + " doesn't used these [" + strings.Trim(resultstr, " ") + "]," + strconv.Itoa(variant_count) + " variants."
 	}
+	*count = variant_count
 	return restr
 }
 func browser_folder(folder string) int {
 	fmt.Println("start research ", folder)
 	icount := 0
 	restr := ""
+	count := 0
+	amount := 0
 	err := filepath.Walk(folder, func(file_path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() {
 			file_path_low := strings.ToLower(file_path)
@@ -106,9 +111,10 @@ func browser_folder(folder string) int {
 			if strings.EqualFold(fileSuffix, "designer.cs") {
 				variants := get_invisible_variant(file_path_low)
 				file_name_cs := strings.ReplaceAll(file_path_low, "designer.", "")
-				report := report_invisible_variant_status(file_path_low, file_name_cs, variants)
+				report := report_invisible_variant_status(file_path_low, file_name_cs, variants, &count)
 				if len(report) > 0 {
 					restr = restr + report + "\n"
+					amount = amount + count
 					fmt.Println(report)
 					icount++
 				}
@@ -119,7 +125,7 @@ func browser_folder(folder string) int {
 	if err != nil {
 		panic(err)
 	}
-	///////////////////////////
+
 	file_report := "report.log"
 	file2, err := os.OpenFile(file_report, os.O_CREATE, 0666)
 	if err != nil {
@@ -128,6 +134,7 @@ func browser_folder(folder string) int {
 	if file2 != nil {
 		defer func(file *os.File) { file.Close() }(file2)
 	}
+	restr = restr + "\n" + strconv.Itoa(amount) + " controls are invisible and not used in " + strconv.Itoa(icount) + " *.cs source code files."
 	_, err = file2.WriteString(restr + "\n")
 	if err != nil {
 		fmt.Printf("file2 write string err : %v\n", err)
@@ -137,7 +144,8 @@ func browser_folder(folder string) int {
 func main() {
 	fmt.Printf("Program start!\n")
 	if len(os.Args) == 2 {
-		browser_folder(os.Args[1])
+		i := browser_folder(os.Args[1])
+		fmt.Println("Handle", i, "files")
 	} else {
 		fmt.Println("Wrong parameters.")
 	}
